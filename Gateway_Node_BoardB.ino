@@ -1,3 +1,8 @@
+/*This ESP32 acts as a gateway bridging local ESP-NOW wireless communication 
+ *          with cloud MQTT communication. It receives sensor data from Board A, publishes 
+ *          it to an MQTT broker, and receives remote override commands to forward back 
+ *          to the sensor node.
+*/
 #include <WiFi.h>
 #include <esp_now.h>
 #include <PubSubClient.h>
