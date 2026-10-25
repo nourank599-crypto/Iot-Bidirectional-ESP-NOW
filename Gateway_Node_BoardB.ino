@@ -9,9 +9,10 @@ const char* mqtt_server = "broker.hivemq.com";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// ضعي هنا الـ MAC Address الخاص بالـ Sensor Node (Board A)
+// Replace with MAC address from sender board's serial output
 uint8_t nodeAddress[] = {0x84, 0x1F, 0xE8, 0x16, 0xDE, 0x38};
 
+// ─── MESSAGE STRUCTURE
 typedef struct struct_message {
     float temp;
     float hum;
@@ -23,7 +24,7 @@ typedef struct struct_message {
 struct_message incomingReadings;
 struct_message outgoingCommand;
 
-// استقبال البيانات من الـ Node عبر ESP-NOW ونشرها على MQTT
+// Receive data from the Node via ESP-NOW and publish it to MQTT
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
   
@@ -35,11 +36,11 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   snprintf(payload, sizeof(payload), "{\"temp\":%.2f, \"hum\":%.2f, \"ldr\":%d, \"relay\":%d}", 
            incomingReadings.temp, incomingReadings.hum, incomingReadings.ldrVal, incomingReadings.relayState);
   
-  // رفع البيانات للسحاب
-  client.publish("esp32/sensor/data", payload);
+// Upload data to the cloud
+client.publish("esp32/sensor/data", payload);
 }
 
-// استقبال الأوامر العكسية من السحاب عبر MQTT
+// Receive remote control commands from the cloud via MQTT
 void callback(char* topic, byte* payload, unsigned int length) {
   String message = "";
   for (int i = 0; i < length; i++) {
@@ -55,7 +56,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     int command = message.toInt();
     outgoingCommand.relayState = command;
 
-    // توجيه الأمر لاسلكياً للـ Sensor Node عبر ESP-NOW
+// Wirelessly forward the command to the Sensor Node via ESP-NOW
     esp_err_t result = esp_now_send(nodeAddress, (uint8_t *) &outgoingCommand, sizeof(outgoingCommand));
     if (result == ESP_OK) {
       Serial.println("Override command successfully forwarded to Node via ESP-NOW!");
@@ -70,7 +71,7 @@ void reconnect() {
     Serial.print("Connecting to MQTT Broker...");
     if (client.connect("ESP32GatewayClient_Nouran")) {
       Serial.println("Connected!");
-      client.subscribe("esp32/relay/control"); // الاشتراك في توبيك التحكم
+      client.subscribe("esp32/relay/control"); // Subscribe to the control topic
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
