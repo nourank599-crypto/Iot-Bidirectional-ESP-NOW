@@ -1,8 +1,14 @@
+/*
+ *          This ESP32 node reads environmental telemetry from a DHT11 sensor and an LDR light 
+ *          sensor, executes local automated or manual relay control decisions, and transmits 
+ *          data wirelessly via ESP-NOW to the Gateway (Board B). It also receives bi-directional 
+ *          override commands from the gateway to switch between manual and automatic modes.
+  */
 #include <WiFi.h>
 #include <esp_now.h>
 #include <DHT.h>
 
-// ======== Pin Definitions ========
+//  Pin Definitions
 #define DHTPIN 4
 #define DHTTYPE DHT11
 #define LDR_PIN 34
@@ -15,7 +21,7 @@ uint8_t gatewayAddress[] = {
   0x44, 0x1D, 0x64, 0xF4, 0x16, 0xBC
 };
 
-// ======== Automatic Mode Settings (Mode 2) ========
+// Automatic Mode Settings (Mode 2) 
 // Relay turns ON if temperature is higher than this value
 const float TEMP_ON_THRESHOLD_C = 30.0;
 
@@ -163,7 +169,7 @@ void loop() {
   }
   lastReadTime = now;
 
-  // ======== 1) Read Sensors First ========
+  // 1) Read Sensors First
   float humidity = dht.readHumidity();
   float temperature = readTempFixed();
   int lightValue = analogRead(LDR_PIN);
@@ -181,7 +187,7 @@ void loop() {
     Serial.println("Invalid DHT reading; temperature will not be used for decision making.");
   }
 
-  // ======== 2) Make Decision Based on Mode ========
+  //  2) Make Decision Based on Mode 
   if (currentMode == 0) {
     relayIsOn = false;
   } else if (currentMode == 1) {
@@ -200,7 +206,7 @@ void loop() {
 
   setRelay(relayIsOn);
 
-  // ======== 3) Send Data to Board B ========
+  //  3) Send Data to Board B 
   myData.temp = hasGoodReading ? lastGoodTemp : 0;
   myData.hum = hasGoodReading ? lastGoodHum : 0;
   myData.ldrVal = lightValue;
